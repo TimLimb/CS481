@@ -19,9 +19,13 @@ namespace SlidingPuzzle.Core
 
         [SerializeField] private float solveStepDelay = 0.25f;
 
+        private const int HardModeMinShuffle = 16;
+        private const int HardModeMaxShuffle = 30;
+
         private Board board;
         private readonly IPuzzleSolver solver = new PuzzleSolver();
         private bool isSolving;
+        private bool isHardMode;
         private int moveCount;
         private int? parMoveCount;
         private int score;
@@ -54,6 +58,7 @@ namespace SlidingPuzzle.Core
             uiManager.Size3Button.onClick.AddListener(() => OnSizeSelected(3));
             uiManager.Size4Button.onClick.AddListener(() => OnSizeSelected(4));
             uiManager.Size5Button.onClick.AddListener(() => OnSizeSelected(5));
+            uiManager.HardModeButton.onClick.AddListener(() => OnSizeSelected(3, hardMode: true));
             uiManager.ShuffleButton.onClick.AddListener(OnShuffleButtonClicked);
             uiManager.SolveButton.onClick.AddListener(OnSolveButtonClicked);
             uiManager.RestartButton.onClick.AddListener(OnRestartButtonClicked);
@@ -61,9 +66,10 @@ namespace SlidingPuzzle.Core
             uiManager.HomeButton.onClick.AddListener(OnHomeButtonClicked);
         }
 
-        private void OnSizeSelected(int size)
+        private void OnSizeSelected(int size, bool hardMode = false)
         {
             boardSize = size;
+            isHardMode = hardMode;
             uiManager.HideTitlePanel();
             uiManager.ShowControlsPanel();
             uiManager.SetBoardVisible(true);
@@ -100,13 +106,42 @@ namespace SlidingPuzzle.Core
             }
 
             uiManager.HideWinPanel();
-            board = new PuzzleGenerator().Generate(boardSize, ComputeShuffleMoveCount());
+            board = GenerateShuffledBoard();
             boardView.Refresh(board);
             ResetMoveTracking();
         }
 
+        private Board GenerateShuffledBoard()
+        {
+            if (!isHardMode)
+            {
+                return new PuzzleGenerator().Generate(boardSize, ComputeShuffleMoveCount());
+            }
+
+            // The random-walk shuffle count only approximates the resulting optimal solve
+            // length (shortcuts can appear), so retry until Par actually lands in range.
+            const int maxAttempts = 25;
+            Board candidate = null;
+            for (int attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                candidate = new PuzzleGenerator().Generate(boardSize, ComputeShuffleMoveCount());
+                int optimalLength = solver.Solve(candidate).Count;
+                if (optimalLength >= HardModeMinShuffle && optimalLength <= HardModeMaxShuffle)
+                {
+                    break;
+                }
+            }
+
+            return candidate;
+        }
+
         private int ComputeShuffleMoveCount()
         {
+            if (isHardMode)
+            {
+                return Random.Range(HardModeMinShuffle, HardModeMaxShuffle + 1);
+            }
+
             var (baseMoves, increment, max) = GetDifficultyConfig();
             return Mathf.Min(max, baseMoves + solvesCompleted * increment);
         }

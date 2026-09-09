@@ -17,6 +17,7 @@ namespace SlidingPuzzle.UI
         [SerializeField] private Button size3Button;
         [SerializeField] private Button size4Button;
         [SerializeField] private Button size5Button;
+        [SerializeField] private Button hardModeButton;
         [SerializeField] private Button shuffleButton;
         [SerializeField] private Button solveButton;
         [SerializeField] private Button restartButton;
@@ -37,6 +38,7 @@ namespace SlidingPuzzle.UI
         public Button Size3Button => size3Button;
         public Button Size4Button => size4Button;
         public Button Size5Button => size5Button;
+        public Button HardModeButton => hardModeButton;
         public Button ShuffleButton => shuffleButton;
         public Button SolveButton => solveButton;
         public Button RestartButton => restartButton;
