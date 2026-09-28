@@ -76,7 +76,9 @@
       // Set this to false if you want to decouple this synchronization from
       // happening inside the engine, and you would instead like to size up
       // the canvas DOM size and WebGL render target sizes yourself.
-      // config.matchWebGLToCanvasSize = false;
+      // Keep rendering at the native 1920x1080 and CSS-scale the canvas below,
+      // so the game looks the same as in the Editor at any window size.
+      config.matchWebGLToCanvasSize = false;
 
       // If you would like all file writes inside Unity Application.persistentDataPath
       // directory to automatically persist so that the contents are remembered when
@@ -104,8 +106,17 @@
 
       } else {
         // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
-        canvas.style.width = "1920px";
-        canvas.style.height = "1080px";
+        // A fixed 1920x1080 canvas is taller than most browser windows, and the
+        // template's centering transform pushes its top (the score) off-screen
+        // where it can't be scrolled to. Scale it to fit instead, leaving room
+        // for the footer bar underneath.
+        var fitCanvas = function () {
+          var scale = Math.min(window.innerWidth / 1920, (window.innerHeight - 50) / 1080, 1);
+          canvas.style.width = Math.floor(1920 * scale) + "px";
+          canvas.style.height = Math.floor(1080 * scale) + "px";
+        };
+        fitCanvas();
+        window.addEventListener("resize", fitCanvas);
       }
 
       canvas.style.background = "url('" + buildUrl + "/assignment2.jpg') center / cover";
